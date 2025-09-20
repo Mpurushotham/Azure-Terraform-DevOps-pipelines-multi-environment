@@ -30,7 +30,7 @@ stages:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
-        backendServiceArm: 'AzureSvc-Terraform'
+        backendServiceArm: 'az-demo'
         backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
         backendAzureRmStorageAccountName: 'devprodqastg'
         backendAzureRmContainerName: 'infrastatefile'
@@ -41,7 +41,7 @@ stages:
         provider: 'azurerm'
         command: 'plan'
         workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
-        environmentServiceNameAzureRM: 'AzureSvc-Terraform'
+        environmentServiceNameAzureRM: 'az-demo'
 
   - job: tfsec
     displayName: tfsec scan
@@ -76,7 +76,7 @@ stages:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
-        backendServiceArm: 'AzureSvc-Terraform'
+        backendServiceArm: 'az-demo'
         backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
         backendAzureRmStorageAccountName: 'devprodqastg'
         backendAzureRmContainerName: 'infrastatefile'
@@ -87,4 +87,4 @@ stages:
         provider: 'azurerm'
         command: 'apply'
         workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
-        environmentServiceNameAzureRM: 'AzureSvc-Terraform'
+        environmentServiceNameAzureRM: 'az-demo'
