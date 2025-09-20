@@ -2,7 +2,6 @@
 The purpose of building a Multi-Environment Infrastructure project using Terraform, Azure DevOps, and Azure Cloud 💻☁️.
 
 # This mini project Repo includes:
-
 🔹 Separate environments provisioning from scratch - Dev, QA, and Prod
 🔹 Reusable Azure RM provided Terraform modules for infrastructure creation without much customization
 🔹 Azure DevOps pipeline (YAML) with 
