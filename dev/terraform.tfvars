@@ -7,7 +7,7 @@ rgs = {
 
 stgs = {
   devstg1 = {
-    name                     = "devrvstg"
+    name                     = "devrvstg1"
     location                 = "eastus"
     resource_group_name      = "dev-infra"
     account_replication_type = "LRS"

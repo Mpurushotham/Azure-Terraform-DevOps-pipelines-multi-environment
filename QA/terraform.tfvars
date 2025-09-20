@@ -7,7 +7,7 @@ rgs = {
 
 stgs = {
   qastg1 = {
-    name                     = "qarvstg"
+    name                     = "qarvstg1"
     location                 = "westus"
     resource_group_name      = "qa-infra"
     account_replication_type = "LRS"

@@ -7,7 +7,7 @@ rgs = {
 
 stgs = {
   prodstg1 = {
-    name                     = "prodrvstg"
+    name                     = "prodrvstg1"
     location                 = "centralindia"
     resource_group_name      = "prod-infra"
     account_replication_type = "LRS"
