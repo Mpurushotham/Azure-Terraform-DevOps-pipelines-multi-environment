@@ -21,7 +21,7 @@ stages:
     pool:
       name: CSX-Self hosted
     steps:
-    - task: TerraformInstaller@1
+    - task: TerraformInstaller@0
       inputs:
         terraformVersion: 'latest'
 
