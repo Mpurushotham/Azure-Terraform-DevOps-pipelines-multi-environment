@@ -1,0 +1,98 @@
+trigger:
+  branches:
+    include:
+      - main
+
+parameters:
+- name: stage
+  displayName: Environment
+  type: string
+  default: dev
+  values:
+    - dev
+    - qa
+    - prod
+
+stages:
+- stage: __default
+  jobs:
+  - job: terraformINITPLAN
+    displayName: Terraform Init & Plan
+    pool:
+      name: CSX-Self hosted
+    steps:
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+        backendServiceArm: 'azsvctf'
+        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
+        backendAzureRmStorageAccountName: 'devprodqastg'
+        backendAzureRmContainerName: 'infrastatefile'
+        backendAzureRmKey: '${{ parameters.stage }}.tfstate'
+
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+        environmentServiceNameAzureRM: 'azsvctf'
+
+  - job: tfsec
+    displayName: tfsec scan
+    pool:
+      name: CSX-Self hosted
+    dependsOn: terraformINITPLAN
+    steps:
+    - task: tfsec@1
+      inputs:
+        version: 'v1.26.0'
+        dir: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+
+  - job: ManualValidationJob
+    displayName: "Manual Validation"
+    pool:
+      name: server
+    dependsOn: tfsec
+    steps:
+    - task: ManualValidation@1
+      inputs:
+        notifyUsers: 'purushotham.muktha@gmail.com'
+        approvers: 'purushotham.muktha@gmail.com'
+
+  - job: terraformApply
+    displayName: Terraform Apply
+    pool:
+      name: CSX-Self hosted
+    dependsOn: ManualValidationJob
+    steps:
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+        backendServiceArm: 'azsvctf'
+        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
+        backendAzureRmStorageAccountName: 'devprodqastg'
+        backendAzureRmContainerName: 'infrastatefile'
+        backendAzureRmKey: '${{ parameters.stage }}.tfstate'
+
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+        environmentServiceNameAzureRM: 'azsvctf'
+
+    - task: DeleteFiles@1
+      displayName: 'clean *'
+      inputs:
+        SourceFolder: '$(Pipeline.Workspace)'
+        Contents: '**/*'
+        RemoveDotFiles: true
+      condition: always()

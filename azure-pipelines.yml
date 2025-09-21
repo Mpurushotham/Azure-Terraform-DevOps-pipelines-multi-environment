@@ -3,21 +3,13 @@ trigger:
     include:
       - main
 
-parameters:
-- name: stage
-  displayName: Environment
-  type: string
-  default: dev
-  values:
-    - dev
-    - qa
-    - prod
-
 stages:
-- stage: __default
+# ---------------- DEV ----------------
+- stage: Dev
+  displayName: "Deploy to Dev"
   jobs:
-  - job: terraformINITPLAN
-    displayName: Terraform Init & Plan
+  - job: TerraformDev
+    displayName: "Terraform Dev Pipeline"
     pool:
       name: CSX-Self hosted
     steps:
@@ -25,74 +17,269 @@ stages:
       inputs:
         terraformVersion: 'latest'
 
+    # Terraform Init
     - task: TerraformTask@5
+      displayName: "Terraform Init (Dev)"
       inputs:
         provider: 'azurerm'
         command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
         backendServiceArm: 'azsvctf'
         backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
         backendAzureRmStorageAccountName: 'devprodqastg'
         backendAzureRmContainerName: 'infrastatefile'
-        backendAzureRmKey: '${{ parameters.stage }}.tfstate'
+        backendAzureRmKey: 'dev.tfstate'
 
+    # Terraform Plan (only if changes exist)
     - task: TerraformTask@5
+      name: planDev
+      displayName: "Terraform Plan (Dev)"
       inputs:
         provider: 'azurerm'
         command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
         environmentServiceNameAzureRM: 'azsvctf'
+        commandOptions: '-detailed-exitcode'   # exit code 2 = changes exist
 
-  - job: tfsec
-    displayName: tfsec scan
-    pool:
-      name: CSX-Self hosted
-    dependsOn: terraformINITPLAN
-    steps:
-    - task: tfsec@1
+# -------- tfsec Scan --------
+    - script: |
+        tfsec --version
+        tfsec $(System.DefaultWorkingDirectory)/dev --format json --out tfsec-report-dev.json
+        tfsec $(System.DefaultWorkingDirectory)/dev --format sarif --out tfsec-report-dev.sarif
+      displayName: "tfsec Security Scan (Dev)"
+
+    - publish: tfsec-report-dev.json
+      artifact: tfsec-dev-json
+      displayName: "Publish tfsec JSON Report (Dev)"
+
+    - publish: tfsec-report-dev.sarif
+      artifact: tfsec-dev-sarif
+      displayName: "Publish tfsec SARIF Report (Dev)"
+    - task: PublishCodeAnalysisResults@1
       inputs:
-        version: 'v1.26.0'
-        dir: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
-
-  - job: ManualValidationJob
-    displayName: "Manual Validation"
-    pool:
-      name: server
-    dependsOn: tfsec
-    steps:
-    - task: ManualValidation@1
-      inputs:
-        notifyUsers: 'purushotham.muktha@gmail.com'
-        approvers: 'purushotham.muktha@gmail.com'
-
-  - job: terraformApply
-    displayName: Terraform Apply
-    pool:
-      name: CSX-Self hosted
-    dependsOn: ManualValidationJob
-    steps:
+        codeAnalysisTool: 'Sarif'
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-dev.sarif
+        reportDirectory: '$(System.DefaultWorkingDirectory)'
+        failOnAnalysisError: true
+      displayName: "Publish tfsec SARIF Results (Dev)"
+    
+    # Conditional Apply (only if plan has changes)
     - task: TerraformTask@5
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
-        backendServiceArm: 'azsvctf'
-        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
-        backendAzureRmStorageAccountName: 'devprodqastg'
-        backendAzureRmContainerName: 'infrastatefile'
-        backendAzureRmKey: '${{ parameters.stage }}.tfstate'
-
-    - task: TerraformTask@5
+      displayName: "Terraform Apply (Dev)"
+      condition: eq(variables['TF_OUTCOME'], 'changes')
       inputs:
         provider: 'azurerm'
         command: 'apply'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
         environmentServiceNameAzureRM: 'azsvctf'
+        commandOptions: '-auto-approve'
 
+    # Cleanup
     - task: DeleteFiles@1
-      displayName: 'clean *'
+      displayName: 'Clean Dev workspace'
       inputs:
         SourceFolder: '$(Pipeline.Workspace)'
         Contents: '**/*'
         RemoveDotFiles: true
       condition: always()
+
+# ---------------- QA ----------------
+- stage: QA
+  displayName: "Deploy to QA"
+  dependsOn: Dev
+  jobs:
+  - job: TerraformQA
+    displayName: "Terraform QA Pipeline"
+    pool:
+      name: CSX-Self hosted
+    steps:
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+
+# Terraform Init
+    - task: TerraformTask@5
+      displayName: "Terraform Init (QA)"
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
+        backendServiceArm: 'azsvctf'
+        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
+        backendAzureRmStorageAccountName: 'devprodqastg'
+        backendAzureRmContainerName: 'infrastatefile'
+        backendAzureRmKey: 'qa.tfstate'
+
+  # Terraform Plan (only if changes exist)
+    - task: TerraformTask@5
+      name: planQA
+      displayName: "Terraform Plan (QA)"
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
+        environmentServiceNameAzureRM: 'azsvctf'
+        commandOptions: '-detailed-exitcode'
+
+    # -------- tfsec Scan --------
+    - script: |
+        tfsec --version
+        tfsec $(System.DefaultWorkingDirectory)/qa --format json --out tfsec-report-qa.json
+        tfsec $(System.DefaultWorkingDirectory)/qa --format sarif --out tfsec-report-qa.sarif
+      displayName: "tfsec Security Scan (QA)"
+
+    - publish: tfsec-report-qa.json
+      artifact: tfsec-qa-json
+      displayName: "Publish tfsec JSON Report (QA)"
+
+    - publish: tfsec-report-qa.sarif
+      artifact: tfsec-qa-sarif
+      displayName: "Publish tfsec SARIF Report (QA)"
+    - task: PublishCodeAnalysisResults@1
+      inputs:
+        codeAnalysisTool: 'Sarif'
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-qa.sar
+        reportDirectory: '$(System.DefaultWorkingDirectory)'
+        failOnAnalysisError: true
+      displayName: "Publish tfsec SARIF Results (QA)"
+  
+  # Conditional Apply (only if plan has changes)
+    - task: TerraformTask@5
+      displayName: "Terraform Apply (QA)"
+      condition: eq(variables['TF_OUTCOME'], 'changes')
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
+        environmentServiceNameAzureRM: 'azsvctf'
+        commandOptions: '-auto-approve'
+
+# Cleanup
+    - task: DeleteFiles@1
+      displayName: 'Clean QA workspace'
+      inputs:
+        SourceFolder: '$(Pipeline.Workspace)'
+        Contents: '**/*'
+        RemoveDotFiles: true
+      condition: always()
+
+# ---------------- PROD ----------------
+- stage: Prod
+  displayName: "Deploy to Prod"
+  dependsOn: QA
+  jobs:
+  - job: TerraformProd
+    displayName: "Terraform Prod Pipeline"
+    pool:
+      name: CSX-Self hosted
+    steps:
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+
+# Terraform Init
+    - task: TerraformTask@5
+      displayName: "Terraform Init (Prod)"
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
+        backendServiceArm: 'azsvctf'
+        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
+        backendAzureRmStorageAccountName: 'devprodqastg'
+        backendAzureRmContainerName: 'infrastatefile'
+        backendAzureRmKey: 'prod.tfstate'
+
+  # Terraform Plan (only if changes exist)
+    - task: TerraformTask@5
+      name: planProd
+      displayName: "Terraform Plan (Prod)"
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
+        environmentServiceNameAzureRM: 'azsvctf'
+        commandOptions: '-detailed-exitcode'
+
+    # # -------- tfsec Scan -------- without blocking (high/critical)
+    # - script: |
+    #     tfsec --version
+    #     tfsec $(System.DefaultWorkingDirectory)/prod --format json --out tfsec-report-prod.json
+    #     tfsec $(System.DefaultWorkingDirectory)/prod --format sarif --out tfsec-report-prod.sarif
+    #   displayName: "tfsec Security Scan (Prod)"
+
+    # - publish: tfsec-report-prod.json
+    #   artifact: tfsec-prod-json
+    #   displayName: "Publish tfsec JSON Report (Prod)"
+
+    # - publish: tfsec-report-prod.sarif
+    #   artifact: tfsec-prod-sarif
+    #   displayName: "Publish tfsec SARIF Report (Prod)"
+    # - task: PublishCodeAnalysisResults@1
+    #   inputs:
+    #     codeAnalysisTool: 'Sarif'
+    #     summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-prod.sarif
+    #     reportDirectory: '$(System.DefaultWorkingDirectory)'
+    #     failOnAnalysisError: true
+    #   displayName: "Publish tfsec SARIF Results (Prod)"
+
+    # -------- tfsec Scan (Blocking for HIGH/CRITICAL) --------
+    - script: |
+        tfsec --version
+        echo "Running tfsec with failure on HIGH or CRITICAL..."
+        tfsec $(System.DefaultWorkingDirectory)/prod --minimum-severity HIGH --format json --out tfsec-report-prod.json
+        tfsec $(System.DefaultWorkingDirectory)/prod --minimum-severity HIGH --format sarif --out tfsec-report-prod.sarif
+      displayName: "tfsec Security Scan (Prod - Blocking)"
+
+    - publish: tfsec-report-prod.json
+      artifact: tfsec-prod-json
+      displayName: "Publish tfsec JSON Report (Prod)"
+
+    - publish: tfsec-report-prod.sarif
+      artifact: tfsec-prod-sarif
+      displayName: "Publish tfsec SARIF Report (Prod)"
+    - task: PublishCodeAnalysisResults@1
+      inputs:
+        codeAnalysisTool: 'Sarif'
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-prod.sarif
+        reportDirectory: '$(System.DefaultWorkingDirectory)'
+        failOnAnalysisError: true
+      displayName: "Publish tfsec SARIF Results (Prod)"
+
+# -------- Manual Approval Before Apply --------
+    - job: ManualValidationProd
+      displayName: "Manual Approval for Prod"
+      pool:
+        name: server
+      dependsOn: planProd
+      steps:
+      - task: ManualValidation@1
+        inputs:
+          notifyUsers: 'purushotham.muktha@gmail.com'
+          approvers: 'purushotham.muktha@gmail.com'
+
+ # Terraform Plan (only if changes exist)
+    - job: TerraformApplyProd
+      displayName: "Terraform Apply (Prod)"
+      dependsOn: ManualValidationProd
+      pool:
+        name: CSX-Self hosted
+      steps:
+      - task: TerraformTask@5
+        displayName: "Terraform Apply (Prod)"
+        condition: eq(variables['TF_OUTCOME'], 'changes')
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
+          environmentServiceNameAzureRM: 'azsvctf'
+          commandOptions: '-auto-approve'
+
+      # Cleanup
+      - task: DeleteFiles@1
+        displayName: 'Clean Prod workspace'
+        inputs:
+          SourceFolder: '$(Pipeline.Workspace)'
+          Contents: '**/*'
+          RemoveDotFiles: true
+        condition: always()
