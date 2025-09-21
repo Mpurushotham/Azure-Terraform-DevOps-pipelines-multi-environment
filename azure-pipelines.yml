@@ -7,7 +7,7 @@ parameters:
 - name: stage
   displayName: Environment
   type: string
-  default: dev
+  default: qa
   values:
     - dev
     - qa
