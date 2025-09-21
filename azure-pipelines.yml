@@ -55,10 +55,11 @@ stages:
     - publish: tfsec-report-dev.sarif
       artifact: tfsec-dev-sarif
       displayName: "Publish tfsec SARIF Report (Dev)"
+
     - task: PublishCodeAnalysisResults@1
       inputs:
         codeAnalysisTool: 'Sarif'
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-dev.sarif
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-dev.sarif'
         reportDirectory: '$(System.DefaultWorkingDirectory)'
         failOnAnalysisError: true
       displayName: "Publish tfsec SARIF Results (Dev)"
@@ -135,10 +136,11 @@ stages:
     - publish: tfsec-report-qa.sarif
       artifact: tfsec-qa-sarif
       displayName: "Publish tfsec SARIF Report (QA)"
+    
     - task: PublishCodeAnalysisResults@1
       inputs:
         codeAnalysisTool: 'Sarif'
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-qa.sar
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-qa.sarif'
         reportDirectory: '$(System.DefaultWorkingDirectory)'
         failOnAnalysisError: true
       displayName: "Publish tfsec SARIF Results (QA)"
@@ -238,10 +240,11 @@ stages:
     - publish: tfsec-report-prod.sarif
       artifact: tfsec-prod-sarif
       displayName: "Publish tfsec SARIF Report (Prod)"
+    
     - task: PublishCodeAnalysisResults@1
       inputs:
         codeAnalysisTool: 'Sarif'
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-prod.sarif
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-prod.sarif'
         reportDirectory: '$(System.DefaultWorkingDirectory)'
         failOnAnalysisError: true
       displayName: "Publish tfsec SARIF Results (Prod)"
