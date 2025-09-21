@@ -13,33 +13,42 @@ stages:
     pool:
       name: CSX-Self hosted
     steps:
-    - task: TerraformInstaller@1
+    - task: terraformInstaller@1
+      displayName: "Install Terraform"
       inputs:
-        terraformVersion: 'latest'
+        targetType: 'inline'
+        script: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          wget https://releases.hashicorp.com/terraform/1.8.2/terraform_1.8.2_linux_amd64.zip
+          unzip terraform_1.8.2_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform version
 
     # Terraform Init
     - task: TerraformTask@5
       displayName: "Terraform Init (Dev)"
       inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
-        backendServiceArm: 'azsvctf'
-        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
-        backendAzureRmStorageAccountName: 'devprodqastg'
-        backendAzureRmContainerName: 'infrastatefile'
-        backendAzureRmKey: 'dev.tfstate'
+        azureSubscription: 'azsvctf'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          cd $(System.DefaultWorkingDirectory)/dev
+          terraform init \
+            -backend-config="resource_group_name=azure-iac-test-tf-rg" \
+            -backend-config="storage_account_name=devprodqastg" \
+            -backend-config="container_name=infrastatefile" \
+            -backend-config="key=dev.tfstate"
 
     # Terraform Plan (only if changes exist)
     - task: TerraformTask@5
       name: planDev
       displayName: "Terraform Plan (Dev)"
       inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
-        environmentServiceNameAzureRM: 'azsvctf'
-        commandOptions: '-detailed-exitcode'   # exit code 2 = changes exist
+        targetType: 'inline'
+        script: |
+          cd "$(System.DefaultWorkingDirectory)/dev"
+          terraform plan -detailed-exitcode
 
 # -------- tfsec Scan --------
     - script: |
@@ -69,20 +78,19 @@ stages:
       displayName: "Terraform Apply (Dev)"
       condition: eq(variables['TF_OUTCOME'], 'changes')
       inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
-        environmentServiceNameAzureRM: 'azsvctf'
-        commandOptions: '-auto-approve'
+        targetType: 'inline'
+        script: |
+          cd "$(System.DefaultWorkingDirectory)/dev"
+          terraform apply -auto-approve
 
-    # Cleanup
-    - task: DeleteFiles@1
-      displayName: 'Clean Dev workspace'
-      inputs:
-        SourceFolder: '$(Pipeline.Workspace)'
-        Contents: '**/*'
-        RemoveDotFiles: true
-      condition: always()
+    # # Cleanup
+    # - task: DeleteFiles@1
+    #   displayName: 'Clean Dev workspace'
+    #   inputs:
+    #     SourceFolder: '$(Pipeline.Workspace)'
+    #     Contents: '**/*'
+    #     RemoveDotFiles: true
+    #   condition: always()
 
 # ---------------- QA ----------------
 - stage: QA
@@ -95,32 +103,39 @@ stages:
       name: CSX-Self hosted
     steps:
     - task: TerraformInstaller@1
+      displayName: "Install Terraform"
       inputs:
-        terraformVersion: 'latest'
+        targetType: 'inline'
+        script: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          wget https://releases.hashicorp.com/terraform/1.8.2/terraform_1.8.2_linux_amd64.zip
+          unzip terraform_1.8.2_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform version
 
 # Terraform Init
     - task: TerraformTask@5
       displayName: "Terraform Init (QA)"
       inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
-        backendServiceArm: 'azsvctf'
-        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
-        backendAzureRmStorageAccountName: 'devprodqastg'
-        backendAzureRmContainerName: 'infrastatefile'
-        backendAzureRmKey: 'qa.tfstate'
+        targetType: 'inline'
+        script: |
+          cd "$(System.DefaultWorkingDirectory)/qa"
+          terraform init `
+            -backend-config="resource_group_name=azure-iac-test-tf-rg" `
+            -backend-config="storage_account_name=devprodqastg" `
+            -backend-config="container_name=infrastatefile" `
+            -backend-config="key=qa.tfstate"
 
   # Terraform Plan (only if changes exist)
     - task: TerraformTask@5
       name: planQA
       displayName: "Terraform Plan (QA)"
       inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
-        environmentServiceNameAzureRM: 'azsvctf'
-        commandOptions: '-detailed-exitcode'
+        targetType: 'inline'
+        script: |
+          cd "$(System.DefaultWorkingDirectory)/qa"
+          terraform plan -detailed-exitcode
 
     # -------- tfsec Scan --------
     - script: |
@@ -150,20 +165,19 @@ stages:
       displayName: "Terraform Apply (QA)"
       condition: eq(variables['TF_OUTCOME'], 'changes')
       inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
-        environmentServiceNameAzureRM: 'azsvctf'
-        commandOptions: '-auto-approve'
+        targetType: 'inline'
+        script: |
+          cd "$(System.DefaultWorkingDirectory)/qa"
+          terraform apply -auto-approve
 
-# Cleanup
-    - task: DeleteFiles@1
-      displayName: 'Clean QA workspace'
-      inputs:
-        SourceFolder: '$(Pipeline.Workspace)'
-        Contents: '**/*'
-        RemoveDotFiles: true
-      condition: always()
+# # Cleanup
+#     - task: DeleteFiles@1
+#       displayName: 'Clean QA workspace'
+#       inputs:
+#         SourceFolder: '$(Pipeline.Workspace)'
+#         Contents: '**/*'
+#         RemoveDotFiles: true
+#       condition: always()
 
 # ---------------- PROD ----------------
 - stage: Prod
@@ -176,32 +190,41 @@ stages:
       name: CSX-Self hosted
     steps:
     - task: TerraformInstaller@1
+      displayName: "Install Terraform"
       inputs:
-        terraformVersion: 'latest'
+        targetType: 'inline'
+        script: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          wget https://releases.hashicorp.com/terraform/1.8.2/terraform_1.8.2_linux_amd64.zip
+          unzip terraform_1.8.2_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform version
 
 # Terraform Init
     - task: TerraformTask@5
       displayName: "Terraform Init (Prod)"
       inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
-        backendServiceArm: 'azsvctf'
-        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
-        backendAzureRmStorageAccountName: 'devprodqastg'
-        backendAzureRmContainerName: 'infrastatefile'
-        backendAzureRmKey: 'prod.tfstate'
+        azureSubscription: 'azsvctf'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          cd $(System.DefaultWorkingDirectory)/prod
+          terraform init \
+            -backend-config="resource_group_name=azure-iac-test-tf-rg" \
+            -backend-config="storage_account_name=devprodqastg" \
+            -backend-config="container_name=infrastatefile" \
+            -backend-config="key=prod.tfstate"
 
   # Terraform Plan (only if changes exist)
     - task: TerraformTask@5
       name: planProd
       displayName: "Terraform Plan (Prod)"
       inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
-        environmentServiceNameAzureRM: 'azsvctf'
-        commandOptions: '-detailed-exitcode'
+        targetType: 'inline'
+        script: |
+          cd "$(System.DefaultWorkingDirectory)/prod"
+          terraform plan -detailed-exitcode
 
     # # -------- tfsec Scan -------- without blocking (high/critical)
     # - script: |
