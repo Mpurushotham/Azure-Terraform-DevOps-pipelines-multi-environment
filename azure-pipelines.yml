@@ -56,13 +56,13 @@ stages:
       artifact: tfsec-dev-sarif
       displayName: "Publish tfsec SARIF Report (Dev)"
 
-    - task: PublishCodeAnalysisResults@1
-      inputs:
-        codeAnalysisTool: 'Sarif'
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-dev.sarif'
-        reportDirectory: '$(System.DefaultWorkingDirectory)'
-        failOnAnalysisError: true
-      displayName: "Publish tfsec SARIF Results (Dev)"
+    # - task: PublishCodeAnalysisResults@1
+    #   inputs:
+    #     codeAnalysisTool: 'Sarif'
+    #     summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-dev.sarif'
+    #     reportDirectory: '$(System.DefaultWorkingDirectory)'
+    #     failOnAnalysisError: true
+    #   displayName: "Publish tfsec SARIF Results (Dev)"
     
     # Conditional Apply (only if plan has changes)
     - task: TerraformTask@5
@@ -137,13 +137,13 @@ stages:
       artifact: tfsec-qa-sarif
       displayName: "Publish tfsec SARIF Report (QA)"
     
-    - task: PublishCodeAnalysisResults@1
-      inputs:
-        codeAnalysisTool: 'Sarif'
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-qa.sarif'
-        reportDirectory: '$(System.DefaultWorkingDirectory)'
-        failOnAnalysisError: true
-      displayName: "Publish tfsec SARIF Results (QA)"
+    # - task: PublishCodeAnalysisResults@1
+    #   inputs:
+    #     codeAnalysisTool: 'Sarif'
+    #     summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-qa.sarif'
+    #     reportDirectory: '$(System.DefaultWorkingDirectory)'
+    #     failOnAnalysisError: true
+    #   displayName: "Publish tfsec SARIF Results (QA)"
   
   # Conditional Apply (only if plan has changes)
     - task: TerraformTask@5
@@ -241,13 +241,13 @@ stages:
       artifact: tfsec-prod-sarif
       displayName: "Publish tfsec SARIF Report (Prod)"
     
-    - task: PublishCodeAnalysisResults@1
-      inputs:
-        codeAnalysisTool: 'Sarif'
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-prod.sarif'
-        reportDirectory: '$(System.DefaultWorkingDirectory)'
-        failOnAnalysisError: true
-      displayName: "Publish tfsec SARIF Results (Prod)"
+    # - task: PublishCodeAnalysisResults@1
+    #   inputs:
+    #     codeAnalysisTool: 'Sarif'
+    #     summaryFileLocation: '$(System.DefaultWorkingDirectory)/tfsec-report-prod.sarif'
+    #     reportDirectory: '$(System.DefaultWorkingDirectory)'
+    #     failOnAnalysisError: true
+    #   displayName: "Publish tfsec SARIF Results (Prod)"
 
 # -------- Manual Approval Before Apply --------
   - job: ManualValidationProd
