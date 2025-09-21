@@ -250,10 +250,10 @@ stages:
       displayName: "Publish tfsec SARIF Results (Prod)"
 
 # -------- Manual Approval Before Apply --------
-    - job: ManualValidationProd
-      displayName: "Manual Approval for Prod"
-      pool:
-        name: server
+  - job: ManualValidationProd
+    displayName: "Manual Approval for Prod"
+    pool:
+      name: server
       dependsOn: planProd
       steps:
       - task: ManualValidation@1
@@ -262,11 +262,11 @@ stages:
           approvers: 'purushotham.muktha@gmail.com'
 
  # Terraform Plan (only if changes exist)
-    - job: TerraformApplyProd
-      displayName: "Terraform Apply (Prod)"
-      dependsOn: ManualValidationProd
-      pool:
-        name: CSX-Self hosted
+  - job: TerraformApplyProd
+    displayName: "Terraform Apply (Prod)"
+    dependsOn: ManualValidationProd
+    pool:
+      name: CSX-Self hosted
       steps:
       - task: TerraformTask@5
         displayName: "Terraform Apply (Prod)"
