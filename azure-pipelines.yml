@@ -88,3 +88,11 @@ stages:
         command: 'apply'
         workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.stage }}'
         environmentServiceNameAzureRM: 'azsvctf'
+
+    - task: DeleteFiles@1
+      displayName: 'clean *'
+      inputs:
+        SourceFolder: '$(Pipeline.Workspace)'
+        Contents: '**/*'
+        RemoveDotFiles: true
+      condition: always()
