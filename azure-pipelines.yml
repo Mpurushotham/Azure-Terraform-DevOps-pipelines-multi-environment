@@ -68,7 +68,7 @@ stages:
     # Conditional Apply (only if plan has changes)
     - task: TerraformTask@5
       displayName: "Terraform Apply (Dev)"
-      condition: eq(variables['TF_OUTCOME'], 'changes')
+      # condition: eq(variables['TF_OUTCOME'], 'add')
       inputs:
         provider: 'azurerm'
         command: 'apply'
@@ -77,14 +77,14 @@ stages:
         commandOptions: '-auto-approve'
 
 
-    # # Cleanup
-    # - task: DeleteFiles@1
-    #   displayName: 'Clean Dev workspace'
-    #   inputs:
-    #     SourceFolder: '$(Pipeline.Workspace)'
-    #     Contents: '**/*'
-    #     RemoveDotFiles: true
-    #   condition: always()
+    # Cleanup
+    - task: DeleteFiles@1
+      displayName: 'Clean Dev workspace'
+      inputs:
+        SourceFolder: '$(Pipeline.Workspace)'
+        Contents: '**/*'
+        RemoveDotFiles: true
+      condition: always()
 
 # ---------------- QA ----------------
 - stage: QA
@@ -150,7 +150,7 @@ stages:
   # Conditional Apply (only if plan has changes)
     - task: TerraformTask@5
       displayName: "Terraform Apply (QA)"
-      condition: eq(variables['TF_OUTCOME'], 'changes')
+      # condition: eq(variables['TF_OUTCOME'], 'changes')
       inputs:
         provider: 'azurerm'
         command: 'apply'
@@ -158,14 +158,14 @@ stages:
         environmentServiceNameAzureRM: 'azsvctf'
         commandOptions: '-auto-approve' 
 
-# # Cleanup
-#     - task: DeleteFiles@1
-#       displayName: 'Clean QA workspace'
-#       inputs:
-#         SourceFolder: '$(Pipeline.Workspace)'
-#         Contents: '**/*'
-#         RemoveDotFiles: true
-#       condition: always()
+# Cleanup
+    - task: DeleteFiles@1
+      displayName: 'Clean QA workspace'
+      inputs:
+        SourceFolder: '$(Pipeline.Workspace)'
+        Contents: '**/*'
+        RemoveDotFiles: true
+      condition: always()
 
 # ---------------- PROD ----------------
 - stage: Prod
@@ -278,7 +278,7 @@ stages:
  # Terraform Plan (only if changes exist)
       - task: TerraformTask@5
         displayName: "Terraform Apply (Prod)"
-        condition: eq(variables['TF_OUTCOME'], 'changes')
+        # condition: eq(variables['TF_OUTCOME'], 'changes')
         inputs:
           provider: 'azurerm'
           command: 'apply'
