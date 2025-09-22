@@ -264,7 +264,7 @@ stages:
           approvers: 'purushotham.muktha@gmail.com'
 
 # -------- Manual Approval from owner Before Apply --------
-  - job: ManualValidationProd
+  - job: ManualApprovalProd
     displayName: "Manual Approval for Prod"
     pool:
       name: server
