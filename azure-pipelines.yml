@@ -17,7 +17,7 @@ stages:
       inputs:
         terraformVersion: 'latest'
 
-    # Terraform Init
+  # Terraform Init
     - task: TerraformTask@5
       displayName: "Terraform Init (Dev)"
       inputs:
@@ -30,8 +30,8 @@ stages:
         backendAzureRmContainerName: 'infrastatefile'
         backendAzureRmKey: 'dev.tfstate'
 
-    # Terraform Plan (only if changes exist)
-  - task: TerraformTask@5
+  # Terraform Plan (only if changes exist)
+    - task: TerraformTask@5
       name: planDev
       displayName: "Terraform Plan (Dev)"
       inputs:
@@ -104,14 +104,14 @@ stages:
     - task: TerraformTask@5
       displayName: "Terraform Init (QA)"
       inputs:
-        targetType: 'inline'
-        script: |
-          cd "$(System.DefaultWorkingDirectory)/qa"
-          terraform init `
-            -backend-config="resource_group_name=azure-iac-test-tf-rg" `
-            -backend-config="storage_account_name=devprodqastg" `
-            -backend-config="container_name=infrastatefile" `
-            -backend-config="key=qa.tfstate"
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
+        backendServiceArm: 'azsvctf'
+        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
+        backendAzureRmStorageAccountName: 'devprodqastg'
+        backendAzureRmContainerName: 'infrastatefile'
+        backendAzureRmKey: 'qa.tfstate'
 
   # Terraform Plan (only if changes exist)
     - task: TerraformTask@5
@@ -195,7 +195,7 @@ stages:
         terraformVersion: 'latest'
 
 # Terraform Init
-  - task: TerraformTask@5
+    - task: TerraformTask@5
       displayName: "Terraform Init (Prod)"
       inputs:
         provider: 'azurerm'
@@ -209,14 +209,14 @@ stages:
 
   # Terraform Plan (only if changes exist)
     - task: TerraformTask@5
-        name: planProd
-        displayName: "Terraform Plan (Prod)"
-        inputs:
-          provider: 'azurerm'
-          command: 'plan'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
-          environmentServiceNameAzureRM: 'azsvctf'
-          commandOptions: '-detailed-exitcode'  # exit code 2 = changes exist
+      name: planProd
+      displayName: "Terraform Plan (Prod)"
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
+        environmentServiceNameAzureRM: 'azsvctf'
+        commandOptions: '-detailed-exitcode'  # exit code 2 = changes exist
 
 
     # # -------- tfsec Scan -------- without blocking (high/critical)
@@ -278,18 +278,18 @@ stages:
           approvers: 'purushotham.muktha@gmail.com'
 
   # Terraform Plan (only if changes exist)
-    - task: TerraformTask@5
-      name: planProd
-      displayName: "Terraform Plan (Prod)"
-      inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
-        environmentServiceNameAzureRM: 'azsvctf'
-        commandOptions: '-detailed-exitcode'  # exit code 2 = changes exist
+      - task: TerraformTask@5
+        name: planProd
+        displayName: "Terraform Plan (Prod)"
+        inputs:
+          provider: 'azurerm'
+          command: 'plan'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
+          environmentServiceNameAzureRM: 'azsvctf'
+          commandOptions: '-detailed-exitcode'  # exit code 2 = changes exist
 
  # Terraform Plan (only if changes exist)
-    - task: TerraformTask@5
+      - task: TerraformTask@5
         displayName: "Terraform Apply (Prod)"
         condition: eq(variables['TF_OUTCOME'], 'changes')
         inputs:
@@ -299,7 +299,7 @@ stages:
           environmentServiceNameAzureRM: 'azsvctf'
           commandOptions: '-auto-approve'
 
-      # Cleanup
+  # Cleanup
       - task: DeleteFiles@1
         displayName: 'Clean Prod workspace'
         inputs:
