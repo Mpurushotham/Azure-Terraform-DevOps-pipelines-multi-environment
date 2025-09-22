@@ -41,7 +41,6 @@ stages:
         environmentServiceNameAzureRM: 'azsvctf'
         commandOptions: '-detailed-exitcode'  # exit code 2 = changes exist
 
-
 # -------- tfsec Scan --------
     - script: |
         tfsec --version
