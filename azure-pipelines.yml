@@ -263,16 +263,17 @@ stages:
           notifyUsers: 'purushotham.muktha@gmail.com'
           approvers: 'purushotham.muktha@gmail.com'
 
-  # Terraform Plan (only if changes exist)
-      - task: TerraformTask@5
-        name: planProd
-        displayName: "Terraform Plan (Prod)"
+# -------- Manual Approval from owner Before Apply --------
+  - job: ManualValidationProd
+    displayName: "Manual Approval for Prod"
+    pool:
+      name: server
+      dependsOn: tfsec
+      steps:
+      - task: ManualValidation@1
         inputs:
-          provider: 'azurerm'
-          command: 'plan'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/prod'
-          environmentServiceNameAzureRM: 'azsvctf'
-          commandOptions: '-detailed-exitcode'  # exit code 2 = changes exist
+          notifyUsers: 'purushotham.muktha@gmail.com'
+          approvers: 'purushotham.muktha@gmail.com'
 
  # Terraform Plan (only if changes exist)
       - task: TerraformTask@5
