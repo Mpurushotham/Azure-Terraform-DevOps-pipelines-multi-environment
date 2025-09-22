@@ -100,18 +100,18 @@ stages:
       inputs:
         terraformVersion: 'latest'
   
-# Terraform Init
-    - task: TerraformTask@5
-      displayName: "Terraform Init (QA)"
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
-        backendServiceArm: 'azsvctf'
-        backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
-        backendAzureRmStorageAccountName: 'devprodqastg'
-        backendAzureRmContainerName: 'infrastatefile'
-        backendAzureRmKey: 'qa.tfstate'
+# # Terraform Init
+#     - task: TerraformTask@5
+#       displayName: "Terraform Init (QA)"
+#       inputs:
+#         provider: 'azurerm'
+#         command: 'init'
+#         workingDirectory: '$(System.DefaultWorkingDirectory)/qa'
+#         backendServiceArm: 'azsvctf'
+#         backendAzureRmResourceGroupName: 'azure-iac-test-tf-rg'
+#         backendAzureRmStorageAccountName: 'devprodqastg'
+#         backendAzureRmContainerName: 'infrastatefile'
+#         backendAzureRmKey: 'qa.tfstate'
 
     # -------- tfsec Scan --------
     - script: |
