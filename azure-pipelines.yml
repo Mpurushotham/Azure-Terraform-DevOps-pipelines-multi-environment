@@ -253,7 +253,7 @@ stages:
 
 # -------- Manual Approval Before Apply --------
   - job: ManualValidationProd
-    displayName: "Manual Approval for Prod"
+    displayName: "Manual validation for Prod after plan and tfsec"
     pool:
       name: server
       dependsOn: planProd
