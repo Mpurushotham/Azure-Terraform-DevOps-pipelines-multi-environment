@@ -232,7 +232,7 @@ stages:
         tfsec --version
         echo "Running tfsec with failure on HIGH or CRITICAL..."
         tfsec $(System.DefaultWorkingDirectory)/prod --minimum-severity HIGH --format json --out tfsec-report-prod.json
-        tfsec $(System.DefaultWorkingDirectory)/prod --minimum-severity HIGH --format sarif --out tfsec-report-prod.sarif
+        tfsec $(System.DefaultWorkingDirectory)/prod --minimum-severity CRITICAL --format sarif --out tfsec-report-prod.sarif
       displayName: "tfsec Security Scan (Prod - Blocking)"
 
     - publish: tfsec-report-prod.json
